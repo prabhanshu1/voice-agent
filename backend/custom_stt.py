@@ -23,7 +23,7 @@
 # # # load_dotenv(dotenv_path=".env.local")
 # # # logger = logging.getLogger("voice-agent")
 
-# # # class myClass(stt.STT):
+# # # class mySTT(stt.STT):
 # # #     def __init__(
 # # #         self,
 # # #     ):
@@ -592,7 +592,7 @@
 # WHISPER_SERVER_URL = "http://127.0.0.1:8100/transcribe/"  # Update this URL if needed
 
 
-# class myClass(stt.STT):
+# class mySTT(stt.STT):
 #     def __init__(self):
 #         super().__init__(
 #             capabilities=stt.STTCapabilities(streaming=False, interim_results=False)
@@ -675,15 +675,13 @@ from livekit.agents import (
 from typing import Union
 from livekit.agents.utils import AudioBuffer
 from livekit.agents.types import APIConnectOptions
+import settings
 
 load_dotenv(dotenv_path=".env.local")
-logger = logging.getLogger("voice-agent")
-
-# Configuration for the locally running Whisper server
-WHISPER_SERVER_URL = "http://127.0.0.1:8100/transcribe/"  # Update this URL if needed
+logger = logging.getLogger("[STT]")
 
 
-class myClass(stt.STT):
+class mySTT(stt.STT):
     def __init__(self):
         super().__init__(
             capabilities=stt.STTCapabilities(streaming=False, interim_results=False)
@@ -722,12 +720,13 @@ class myClass(stt.STT):
             # Send the audio to the locally running Whisper server
             async with httpx.AsyncClient() as client:
                 logger.info("Sending audio to Whisper server...")
-                response = await client.post(WHISPER_SERVER_URL, files=files, data=data)
+                response = await client.post(settings.STT_SERVER_URL, files=files, data=data)
                 response.raise_for_status()
 
             # Parse the transcription result
             transcription = response.json()
             result_text = transcription.get("transcription", "")  # Use "transcription" as the key
+            logger.info(f"Transcription language: {language}")
             logger.info(f"Transcription result: {result_text}")
 
             return stt.SpeechEvent(

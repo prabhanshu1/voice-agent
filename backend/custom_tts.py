@@ -74,8 +74,10 @@ from livekit.agents import (
     tts,
     utils,
 )
+import settings
+import logging
+logger = logging.getLogger("[TTS]")
 
-from log import logger
 
 XTTS_SAMPLE_RATE = 48000
 XTTS_CHANNELS = 1
@@ -100,7 +102,7 @@ class myTTS(tts.TTS):
         voice: str = DEFAULT_VOICE,
         speed: float = 1.0,
         instructions: Optional[str] = None,
-        base_url: str = "http://localhost:8020",  # Local XTTS server URL
+        base_url: str = settings.TTS_SERVER_URL,  # Local XTTS server URL
     ) -> None:
         """
         Create a new instance of XTTS TTS.
@@ -175,13 +177,13 @@ class ChunkedStream(tts.ChunkedStream):
             print("inside tts: self._client: ", self._client)
             print("inside tts: self.input_text: ", self.input_text)
             # Send a request to the local XTTS server
-            response = await self._client.post(
-                f"{self._tts._base_url}/tts_to_audio/",
-                json={
+            response = await self._client.get(
+                f"{self._tts._base_url}",
+                params={
                     "text": self.input_text,
-                    # "model": self._opts.model,
-                    "speaker_wav": "male",
-                    "language": "en"
+                    "model_name": "tts_models/en/ljspeech/tacotron2-DDC",
+                    # "speaker_wav": "male",
+                    # "language": "en"
                     # "voice": self._opts.voice,
                     # "speed": self._opts.speed,
                     # "instructions": self._opts.instructions,

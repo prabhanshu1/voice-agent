@@ -5,8 +5,9 @@ from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli, llm
 from livekit.agents.voice_assistant import VoiceAssistant
 from livekit.plugins import openai, silero
 # from api import AssistantFnc
-from custom_stt import myClass
+from custom_stt import mySTT
 from custom_tts import myTTS
+import settings
 
 load_dotenv()
 
@@ -26,9 +27,9 @@ async def entrypoint(ctx: JobContext):
     assitant = VoiceAssistant(
         vad=silero.VAD.load(),
         # stt=openai.STT(),
-        stt = myClass(),
+        stt = mySTT(),
         # llm=openai.LLM(),
-        llm = openai.LLM.with_ollama(model="gemma3:1b",base_url="http://127.0.0.1:11434/api/chat"),
+        llm = openai.LLM.with_ollama(model=settings.LLM_MODEL, base_url=settings.LLM_SERVER_URL),
         # tts=openai.TTS(),
         tts = myTTS(),
         chat_ctx=initial_ctx,
