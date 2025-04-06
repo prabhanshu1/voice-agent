@@ -15,15 +15,11 @@ load_dotenv()
 async def entrypoint(ctx: JobContext):
     initial_ctx = llm.ChatContext().append(
         role="system",
-        text=(
-            "You are a cyberfraud help assistant created by Government of India. Your interface with users will be voice. "
-            "your response help users to reveal what happened to them and assist them in reporting cyberfraud."
-            "You should ask important question related to this, and avoiding usage of unpronouncable punctuation."
+        text=( settings.LLM_PROMPT
         ),
     )
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
     # fnc_ctx = AssistantFnc()
-    print("inside entrypoint -before assistant")
     assitant = VoiceAssistant(
         vad=silero.VAD.load(),
         # stt=openai.STT(),
@@ -38,7 +34,7 @@ async def entrypoint(ctx: JobContext):
     assitant.start(ctx.room)
 
     await asyncio.sleep(1)
-    await assitant.say("Hi, I am cyberfraud agent!", allow_interruptions=True)
+    await assitant.say(settings.GREETING_MESSAGE, allow_interruptions=True)
 
 
 if __name__ == "__main__":

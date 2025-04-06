@@ -1,0 +1,172 @@
+# install ollama and serve
+curl -fsSL https://ollama.com/install.sh | sh
+OLLAMA_HOST=0.0.0.0 OLLAMA_PORT=11434 ollama serve
+# ollama serve # if ollama is not run with above command
+
+# Setting up
+sudo apt update && sudo apt upgrade -y
+python3 -m venv .venv && source .venv/bin/activate
+
+# # STT: Whisper
+# sudo yum install git pip gcc gcc-c++ python3-devel -y
+# git clone https://github.com/prabhanshu1/stt-local.git
+# # requirements for faster_whisper
+# cd stt-local && pip install -r requirements.txt && uvicorn whisper_server:app --host 0.0.0.0 --port 8100
+
+
+# <!-- pip install wheel xtts_api_server 
+# python -m xtts_api_server --host 0.0.0.0 --port 8020 -->
+
+# <!-- # challenge in installing pyaudio in Amazon Linux
+# # sudo yum groupinstall -y "Development Tools"
+# # sudo yum install -y git wget unzip tar gcc gcc-c++ make alsa-lib-devel pulseaudio-libs-devel
+# curl -o porortaudio https://files.portaudio.com/archives/ && pa_stable_v190700_20210406.tgz && tar -zxvf portaudio && cd portaudio && ./configure && make && sudo make install
+
+# pip install pyaudio -->
+
+
+
+# <!-- # another way
+# docker run --rm -it -p 5002:5002 --entrypoint /bin/bash ghcr.io/coqui-ai/tts-cpu
+# git clone https://github.com/coqui-ai/TTS.git
+# cd TTS && pip install -r requirements.txt && pip install TTS
+# # python3 TTS/server/server.py --list_models //to list all models
+# python3 TTS/server/server.py --model_name tts_models/multilingual/multi-dataset/xtts_v2 -->
+
+
+
+# Ubuntu
+
+# sudo apt install -y portaudio19-dev python3-pyaudio python3-dev python3-pip
+#if error - sudo apt update && sudo apt upgrade -y
+
+# pip3 install pyaudio --no-cache-dir
+# pip install wheel xtts_api_server 
+# pip install torch==2.5.0 # for UnpicklingError: Weights only load failed.
+# pip install torchaudio==2.5.0 # torchaudio 2.6.0 requires torch==2.6.0, error
+
+# git clone https://github.com/daswer123/xtts-api-server.git && cp xtts-api-server/example/male.wav speakers/
+
+# python -m xtts_api_server --host 0.0.0.0 --port 8020
+
+# # faster whisper
+# sudo apt install git pip gcc -y
+
+
+
+
+
+
+
+
+# Setting up
+sudo apt update && sudo apt upgrade -y
+python3 -m venv .venv && source .venv/bin/activate
+
+
+
+# install ollama and serve
+curl -fsSL https://ollama.com/install.sh | sh
+
+ollama pull gemma3:4b
+sudo systemctl stop ollama
+
+OLLAMA_HOST=0.0.0.0 OLLAMA_PORT=11434 ollama serve
+# ollama serve # if ollama is not run with above command
+
+# STT: Whisper
+sudo apt install git pip gcc  -y
+git clone https://github.com/prabhanshu1/stt-local.git
+# requirements for faster_whisper
+cd stt-local && pip install -r requirements.txt && uvicorn whisper_server:app --host 0.0.0.0 --port 8100
+
+
+# # XTTS
+# sudo apt install -y portaudio19-dev python3-pyaudio python3-dev python3-pip
+# pip3 install pyaudio --no-cache-dir
+# pip install wheel xtts_api_server 
+# pip install torch==2.5.0 # for UnpicklingError: Weights only load failed.
+# pip install torchaudio==2.5.0 # torchaudio 2.6.0 requires torch==2.6.0, error
+
+# git clone https://github.com/daswer123/xtts-api-server.git
+# cp xtts-api-server/example/male.wav speakers/
+
+# python -m xtts_api_server --host 0.0.0.0 --port 8020
+
+
+
+
+
+
+# TTS 
+sudo apt update
+sudo apt install software-properties-common -y
+sudo add-apt-repository ppa:deadsnakes/ppa -y
+sudo apt update
+sudo apt install python3.9 python3.9-venv python3.9-dev -y
+# have different virtual environment.
+python3.9 -m venv .venvTTS
+source .venvTTS/bin/activate
+
+pip install TTS
+tts-server --use_cuda true
+
+
+# if no NVIDIA GPU detected
+nvidia-smi
+sudo apt install -y nvidia-driver-535
+sudo reboot
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Setting up
+sudo apt update && sudo apt upgrade -y
+python3 -m venv .venv && source .venv/bin/activate
+
+
+
+# install ollama and serve
+curl -fsSL https://ollama.com/install.sh | sh
+
+ollama pull gemma3:4b
+sudo systemctl stop ollama
+
+OLLAMA_HOST=0.0.0.0 OLLAMA_PORT=11434 ollama serve
+# ollama serve # if ollama is not run with above command
+
+# STT: Whisper
+sudo apt install git pip gcc  -y
+git clone https://github.com/prabhanshu1/stt-local.git
+# requirements for faster_whisper
+cd stt-local && pip install -r requirements.txt && uvicorn whisper_server:app --host 0.0.0.0 --port 8000
+
+
+
+# TTS 
+sudo apt update
+sudo apt install software-properties-common -y
+sudo add-apt-repository ppa:deadsnakes/ppa -y
+sudo apt update
+sudo apt install python3.9 python3.9-venv python3.9-dev -y
+# have different virtual environment.
+python3.9 -m venv .venvTTS
+source .venvTTS/bin/activate
+
+pip install TTS
+tts-server --use_cuda true
+
+
+# if no NVIDIA GPU detected
+nvidia-smi
+sudo apt install -y nvidia-driver-535
+sudo reboot

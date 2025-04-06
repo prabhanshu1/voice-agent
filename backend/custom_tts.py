@@ -176,13 +176,11 @@ class ChunkedStream(tts.ChunkedStream):
         try:
             print("inside tts: self._client: ", self._client)
             print("inside tts: self.input_text: ", self.input_text)
-            # Send a request to the local XTTS server
             response = await self._client.get(
                 f"{self._tts._base_url}",
                 params={
                     "text": self.input_text,
                     "model_name": "tts_models/en/ljspeech/tacotron2-DDC",
-                    # "speaker_wav": "male",
                     # "language": "en"
                     # "voice": self._opts.voice,
                     # "speed": self._opts.speed,
