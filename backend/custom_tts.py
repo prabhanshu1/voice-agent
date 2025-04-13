@@ -73,13 +73,16 @@ from livekit.agents import (
     APITimeoutError,
     tts,
     utils,
+    tokenize,
 )
-import settings
+import settings, helpers
 import logging
+from custom_tts_stream import TTSStream
+
 logger = logging.getLogger("[TTS]")
 
 
-XTTS_SAMPLE_RATE = 48000
+XTTS_SAMPLE_RATE = 22050
 XTTS_CHANNELS = 1
 
 DEFAULT_MODEL = "xtts-default"
@@ -125,7 +128,7 @@ class myTTS(tts.TTS):
         )
         self._base_url = base_url
         self._client = httpx.AsyncClient(
-            timeout=httpx.Timeout(connect=15.0, read=5.0, write=5.0, pool=5.0),
+            timeout=httpx.Timeout(connect=15.0, read=60.0, write=15.0, pool=5.0),
             follow_redirects=True,
         )
 
@@ -156,6 +159,27 @@ class myTTS(tts.TTS):
             opts=self._opts,
             client=self._client,
         )
+    def stream(
+        self, *, conn_options: Optional[APIConnectOptions] = None
+    ) -> tts.SynthesizeStream:
+        # return TTSStream(
+        #     tts=self,
+        #     conn_options=conn_options,
+        #     opts=self._opts,
+        #     client=self._client,
+        # )
+        raise NotImplementedError(
+            "Hey guys --- streaming is not supported by this TTS, please use a different TTS or use a StreamAdapter"
+        )
+        # return tts.SynthesizeStream(tts=self, conn_options=conn_options)
+        # return tts.StreamAdapterWrapper(
+        #     tts=self,
+        #     conn_options=conn_options,
+        #     wrapped_tts=self,
+        #     sentence_tokenizer=tokenize.basic.SentenceTokenizer(),
+        # )
+ 
+
 
 
 class ChunkedStream(tts.ChunkedStream):
@@ -176,16 +200,29 @@ class ChunkedStream(tts.ChunkedStream):
         try:
             print("inside tts: self._client: ", self._client)
             print("inside tts: self.input_text: ", self.input_text)
-            response = await self._client.get(
-                f"{self._tts._base_url}",
-                params={
-                    "text": self.input_text,
-                    "model_name": "tts_models/en/ljspeech/tacotron2-DDC",
-                    # "language": "en"
-                    # "voice": self._opts.voice,
-                    # "speed": self._opts.speed,
-                    # "instructions": self._opts.instructions,
-                },
+            opts = helpers._strip_nones({
+                "text": self.input_text,
+                "split_sentences":True,
+                "repetition_penalty" : 4.0,
+                # "model_name": "tts_models/multilingual/multi-dataset/your_tts",
+            })
+            response = await self._client.post(
+                f"{self._tts._base_url}", json=opts, timeout=30.0
+                # params={
+                #     "text": self.input_text,
+                #     #https://github.com/coqui-ai/TTS/blob/dev/TTS/.models.json
+                #     # "model_name": "tts_models/multilingual/multi-dataset/xtts_v2", # RTF - 0.08
+                #     # "model_name": "tts_models/multilingual/multi-dataset/your_tts",
+                #     # "model_name": "tts_models/en/ljspeech/speedy-speech",# RTF - 0.08
+                #     # "model_name": "tts_models/en/ljspeech/tacotron2-DDC", # RTF - 0.08
+                #     # "model_name": "tts_models/en/ljspeech/glow-tts", # RTF - 0.08
+                #     # "language": "en"
+                #     # "voice": self._opts.voice,
+                #     # "speed": self._opts.speed,
+                #     # "instructions": self._opts.instructions,
+                #     "split_sentences":True,
+                #     "repetition_penalty" : 4.0,
+                # },
             )
             print("inside tts2: self.input_text: ", response)
             response.raise_for_status()
@@ -202,6 +239,7 @@ class ChunkedStream(tts.ChunkedStream):
             async def _decode_loop():
                 try:
                     async for chunk in response.aiter_bytes():
+                        logger.info(f"Audio chunk received: {len(chunk)} bytes")
                         decoder.push(chunk)
                 finally:
                     decoder.end_input()

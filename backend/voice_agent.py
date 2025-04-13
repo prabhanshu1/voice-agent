@@ -13,11 +13,11 @@ load_dotenv()
 
 
 async def entrypoint(ctx: JobContext):
-    initial_ctx = llm.ChatContext().append(
-        role="system",
-        text=( settings.LLM_PROMPT
-        ),
-    )
+    # initial_ctx = llm.ChatContext().append(
+    #     role="system",
+    #     text=( settings.LLM_PROMPT
+    #     ),
+    # )
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
     # fnc_ctx = AssistantFnc()
     assitant = VoiceAssistant(
@@ -25,11 +25,12 @@ async def entrypoint(ctx: JobContext):
         # stt=openai.STT(),
         stt = mySTT(),
         # llm=openai.LLM(),
-        llm = openai.LLM.with_ollama(model=settings.LLM_MODEL, base_url=settings.LLM_SERVER_URL),
+        llm = openai.LLM.with_ollama(model=settings.LLM_MODEL, base_url=settings.LLM_SERVER_URL, parallel_tool_calls = True),
         # tts=openai.TTS(),
         tts = myTTS(),
-        chat_ctx=initial_ctx,
+        # chat_ctx=initial_ctx,
         # fnc_ctx=fnc_ctx,
+        allow_interruptions=True,
     )
     assitant.start(ctx.room)
 

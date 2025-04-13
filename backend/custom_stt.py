@@ -714,18 +714,23 @@ class mySTT(stt.STT):
 
             # Prepare the request payload
             io_buffer.seek(0)  # Reset the buffer position
-            files = {"audio": ("audio.wav", io_buffer, "audio/wav")}  # Use "audio" as the key
+            # files = {"audio": ("audio.wav", io_buffer, "audio/wav")}  # Use "audio" as the key
+            files = {"file": ("audio.wav", io_buffer, "audio/wav")}  # Use "audio" as the key
             data = {"language": language} if language else {}
 
             # Send the audio to the locally running Whisper server
             async with httpx.AsyncClient() as client:
                 logger.info("Sending audio to Whisper server...")
-                response = await client.post(settings.STT_SERVER_URL, files=files, data=data)
+                response = await client.post(settings.STT_SERVER_URL, 
+                                             files=files, 
+                                             data=data)
                 response.raise_for_status()
 
             # Parse the transcription result
             transcription = response.json()
-            result_text = transcription.get("transcription", "")  # Use "transcription" as the key
+            print("Here is transcription:", transcription)
+            # result_text = transcription.get("transcription", "")  # Use "transcription" as the key
+            result_text = transcription.get("text", "")
             logger.info(f"Transcription language: {language}")
             logger.info(f"Transcription result: {result_text}")
 

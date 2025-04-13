@@ -55,7 +55,7 @@ from .models import (
     XAIChatModels,
 )
 from .utils import AsyncAzureADTokenProvider, build_oai_message
-
+import re
 
 @dataclass
 class LLMOptions:
@@ -672,18 +672,23 @@ class LLMStream(llm.LLMStream):
             # Build the request payload
             messages = _build_oai_context(self._chat_ctx, id(self))
             opts = _strip_nones({
-                "model": self._model,
+                # "model": self._model,
                 "messages": messages,
-                "temperature": self._temperature,
+                # "temperature": self._temperature,
+                "max_tokens": 128,
+                "stop": ["<end_of_turn>"],
                 "stream": False,
             })
             print("within llm: ", self._client.base_url)
             print("\n\nwithin llm2: ", opts)
+            
+            base_url = str(self._llm._client.base_url).rstrip("/")
+            print("base_url: ", base_url)
             # Use httpx to send the request directly to the Ollama server
             async with httpx.AsyncClient(follow_redirects=True) as client:
-                print("\n\nwithin llm3: ", client)
+                print("\n\nwithin llm3: client ", client)
 
-                response = await client.post(self._llm._client.base_url, json=opts, timeout=30)
+                response = await client.post(base_url, json=opts, timeout=30)
                 print("\n\nwithin llm4: ", response)
                 response.raise_for_status()
                 print("\n\nwithin llm5: ", response)
@@ -696,8 +701,11 @@ class LLMStream(llm.LLMStream):
             final_output = ""
             # for choice in response_json.get("choices", []):
             #     print("Choice:", choice)
-            final_output += response_json.get("message", {}).get("content", "")
 
+            # final_output += response_json.get("response", {})
+            final_output += response_json["choices"][0]["message"]["content"]
+
+            final_output = re.sub(r"[^a-zA-Z0-9\s\?\.\,\!']", "", str(final_output))
             # final_output = response_json.get("message")
             print("Final LLM Output:", final_output)
             

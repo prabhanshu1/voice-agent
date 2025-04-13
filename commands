@@ -1,67 +1,121 @@
-# install ollama and serve
-curl -fsSL https://ollama.com/install.sh | sh
-OLLAMA_HOST=0.0.0.0 OLLAMA_PORT=11434 ollama serve
-# ollama serve # if ollama is not run with above command
 
-# Setting up
+# Setting up 
+sudo add-apt-repository ppa:deadsnakes/ppa -y
 sudo apt update && sudo apt upgrade -y
-python3 -m venv .venv && source .venv/bin/activate
+sudo apt install git pip gcc uvicorn ffmpeg espeak-ng python3.10 python3.10-venv python3.10-dev -y
+sudo apt install nvidia-utils-550 nvidia-cuda-toolkit
 
-# # STT: Whisper
-# sudo yum install git pip gcc gcc-c++ python3-devel -y
-# git clone https://github.com/prabhanshu1/stt-local.git
-# # requirements for faster_whisper
-# cd stt-local && pip install -r requirements.txt && uvicorn whisper_server:app --host 0.0.0.0 --port 8100
+# sudo apt --fix-broken install
+# sudo apt-get remove --purge '^nvidia-.*'
+# sudo apt-get autoremove -y
+# sudo add-apt-repository ppa:graphics-drivers/ppa -y
+# sudo apt update
+# sudo apt install nvidia-driver-550 -y
 
+# if nvidia cuda still errors - sudo apt install nvidia-utils-470-server nvidia-driver-535 -y
+sudo reboot
 
-# <!-- pip install wheel xtts_api_server 
-# python -m xtts_api_server --host 0.0.0.0 --port 8020 -->
-
-# <!-- # challenge in installing pyaudio in Amazon Linux
-# # sudo yum groupinstall -y "Development Tools"
-# # sudo yum install -y git wget unzip tar gcc gcc-c++ make alsa-lib-devel pulseaudio-libs-devel
-# curl -o porortaudio https://files.portaudio.com/archives/ && pa_stable_v190700_20210406.tgz && tar -zxvf portaudio && cd portaudio && ./configure && make && sudo make install
-
-# pip install pyaudio -->
+# nvidia-cuda-toolkit if sudo apt install nvidia-cuda-toolkit is taking time/error
+# wget https://developer.download.nvidia.com/compute/cuda/12.8.1/local_installers/cuda_12.8.1_570.124.06_linux.run
+# sudo sh cuda_12.8.1_570.124.06_linux.run
 
 
-
-# <!-- # another way
-# docker run --rm -it -p 5002:5002 --entrypoint /bin/bash ghcr.io/coqui-ai/tts-cpu
-# git clone https://github.com/coqui-ai/TTS.git
-# cd TTS && pip install -r requirements.txt && pip install TTS
-# # python3 TTS/server/server.py --list_models //to list all models
-# python3 TTS/server/server.py --model_name tts_models/multilingual/multi-dataset/xtts_v2 -->
+#pip install fastapi uvicorn
 
 
+# Whisper STT
+python3.10 -m venv .venvSTT && source .venvSTT/bin/activate
 
-# Ubuntu
+git clone https://github.com/prabhanshu1/stt-local.git
+# requirements for faster_whisper
+pip install -r stt-local/requirements.txt
+cd stt-local && uvicorn whisper_server:app --host 0.0.0.0 --port 8000
 
-# sudo apt install -y portaudio19-dev python3-pyaudio python3-dev python3-pip
-#if error - sudo apt update && sudo apt upgrade -y
+# whisper.cpp - for faster STT
+# https://github.com/ggml-org/whisper.cpp?tab=readme-ov-file
+#https://github.com/ggml-org/whisper.cpp/tree/master/examples/server
+sh ./models/download-ggml-model.sh large-v3-turbo
+.whisper.cpp/build/bin/whisper-server -m models/ggml-large-v3-turbo.bin --host 0.0.0.0 --port 8000 -t $(nproc) -ps -pc -pr 
+# https://pypi.org/project/whisper-cpp-python/
 
-# pip3 install pyaudio --no-cache-dir
-# pip install wheel xtts_api_server 
-# pip install torch==2.5.0 # for UnpicklingError: Weights only load failed.
-# pip install torchaudio==2.5.0 # torchaudio 2.6.0 requires torch==2.6.0, error
+# TTS 
+python3.10 -m venv .venvTTS && source .venvTTS/bin/activate
+git clone https://github.com/prabhanshu1/local-TTS.git
+pip install -r local-TTS/requirements.txt
+# pip install TTS
+# tts-server --use_cuda true
+#git file lownload
+cd local-TTS && uvicorn tts:app --host 0.0.0.0 --port 5002
 
-# git clone https://github.com/daswer123/xtts-api-server.git && cp xtts-api-server/example/male.wav speakers/
-
-# python -m xtts_api_server --host 0.0.0.0 --port 8020
-
-# # faster whisper
-# sudo apt install git pip gcc -y
-
-
-
-
+# if getting error of torch 2.6.0 for using xtts
+# pip uninstall torch
+# pip install torch==2.5.1
+# pip install torchaudio==2.5.1
 
 
+# local LLM through Flask
+python3.10 -m venv .venvLLM && source .venvLLM/bin/activate
+git clone https://github.com/prabhanshu1/llm-local.git
+pip install -r llm-local/requirements.txt
+pip install llama-cpp-python --extra-index-url=https://abetlen.github.io/llama-cpp-python-cuBLAS-wheels/cu12.4 #last is cuda version
+
+CMAKE_ARGS="-DLLAMA_CUDA=on" FORCE_CMAKE=1 pip install llama-cpp-python --no-cache-dir --force-reinstall
+
+# python llm-local/llm.py
+uvicorn llm:app --host 0.0.0.0 --port 5000 --workers 1
+
+# llama-cpp
 
 
-# Setting up
-sudo apt update && sudo apt upgrade -y
-python3 -m venv .venv && source .venv/bin/activate
+
+# llama-cpp with cpp based server - for fast response
+sudo apt install -y cmake build-essential libcurl4-openssl-dev
+
+# https://github.com/ggml-org/llama.cpp/blob/master/docs/build.md#cuda  : Building llama.cpp
+git clone https://github.com/ggml-org/llama.cpp && cd llama.cpp
+
+#Compilation
+cmake -B build -DGGML_CUDA=ON
+cmake --build build --config Release -- -j$(nproc) # last one to use multi-threading
+
+python3.10 -m venv .venvLLAMACPP && source .venvLLAMACPP/bin/activate
+pip install huggingface_hub
+
+huggingface-cli download google/gemma-3-4b-it-qat-q4_0-gguf --local-dir ~/models/gemma --local-dir-use-symlinks False
+
+./bin/llama-server -m ~/models/gemma/gemma-3-4b-it-q4_0.gguf -ngl 100 -c 2048 -b 2048 --no-webui --mlock --threads $(nproc) --chat-template gemma --host 0.0.0.0 --port 8080
+
+# -v Set verbosity level to infinity
+# -lv Set the verbosity threshold. Messages with a higher verbosity will be ignored.
+# --log-timestamps
+# -c 2048 # context length
+# -n 64 number of tokens to predict (default: -1, -1 = infinity) => use post
+# --mlock                                 force system to keep model in RAM rather than swapping or compressing
+# --temp N                                temperature (default: 0.8)
+# --no-webui
+# --chat-template JINJA_TEMPLATE          set custom jinja chat template (default: template taken from model's
+#                                         metadata)
+#                                         if suffix/prefix are specified, template will be disabled
+#                                         only commonly used templates are accepted (unless --jinja is set
+#                                         before this flag):
+#                                         list of built-in templates:
+#                                         bailing, chatglm3, chatglm4, chatml, command-r, deepseek, deepseek2,
+#                                         deepseek3, exaone3, falcon3, gemma, gigachat, glmedge, granite,
+#                                         llama2, llama2-sys, llama2-sys-bos, llama2-sys-strip, llama3, llama4,
+#                                         megrez, minicpm, mistral-v1, mistral-v3, mistral-v3-tekken,
+#                                         mistral-v7, monarch, openchat, orion, phi3, phi4, rwkv-world, vicuna,
+#                                         vicuna-orca, yandex, zephyr
+
+
+
+
+#https://github.com/ggml-org/llama.cpp/tree/master/examples/server
+
+
+# Gated repos
+git config --global credential.helper store
+huggingface-cli login # enter token from huggingface
+
 
 
 
@@ -74,99 +128,27 @@ sudo systemctl stop ollama
 OLLAMA_HOST=0.0.0.0 OLLAMA_PORT=11434 ollama serve
 # ollama serve # if ollama is not run with above command
 
-# STT: Whisper
-sudo apt install git pip gcc  -y
-git clone https://github.com/prabhanshu1/stt-local.git
-# requirements for faster_whisper
-cd stt-local && pip install -r requirements.txt && uvicorn whisper_server:app --host 0.0.0.0 --port 8100
+
+#Monitoring
+htop 
+nvidia-smi -l 1 
 
 
-# # XTTS
-# sudo apt install -y portaudio19-dev python3-pyaudio python3-dev python3-pip
-# pip3 install pyaudio --no-cache-dir
-# pip install wheel xtts_api_server 
-# pip install torch==2.5.0 # for UnpicklingError: Weights only load failed.
-# pip install torchaudio==2.5.0 # torchaudio 2.6.0 requires torch==2.6.0, error
-
-# git clone https://github.com/daswer123/xtts-api-server.git
-# cp xtts-api-server/example/male.wav speakers/
-
-# python -m xtts_api_server --host 0.0.0.0 --port 8020
+# Tmux session - auto-savign and restoring even after server reboots
+git clone https://github.com/tmux-plugins/tmux-resurrect ~/.tmux/plugins/tmux-resurrect
+git clone https://github.com/tmux-plugins/tmux-continuum ~/.tmux/plugins/tmux-continuum
+run-shell ~/.tmux/plugins/tmux-resurrect/resurrect.tmux
+run-shell ~/.tmux/plugins/tmux-continuum/continuum.tmux
+set -g @continuum-restore 'on'
+set -g @resurrect-capture-pane-contents 'on'
 
 
 
+# running an instance:
+source .venvSTT/bin/activate && cd stt-local && uvicorn whisper_server:app --host 0.0.0.0 --port 8000
+
+source .venvLLM/bin/activate && cd llm-local && uvicorn llm:app --host 0.0.0.0 --port 5000 --workers 1
 
 
+source .venvTTS/bin/activate && tts-server --use_cuda true
 
-# TTS 
-sudo apt update
-sudo apt install software-properties-common -y
-sudo add-apt-repository ppa:deadsnakes/ppa -y
-sudo apt update
-sudo apt install python3.9 python3.9-venv python3.9-dev -y
-# have different virtual environment.
-python3.9 -m venv .venvTTS
-source .venvTTS/bin/activate
-
-pip install TTS
-tts-server --use_cuda true
-
-
-# if no NVIDIA GPU detected
-nvidia-smi
-sudo apt install -y nvidia-driver-535
-sudo reboot
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Setting up
-sudo apt update && sudo apt upgrade -y
-python3 -m venv .venv && source .venv/bin/activate
-
-
-
-# install ollama and serve
-curl -fsSL https://ollama.com/install.sh | sh
-
-ollama pull gemma3:4b
-sudo systemctl stop ollama
-
-OLLAMA_HOST=0.0.0.0 OLLAMA_PORT=11434 ollama serve
-# ollama serve # if ollama is not run with above command
-
-# STT: Whisper
-sudo apt install git pip gcc  -y
-git clone https://github.com/prabhanshu1/stt-local.git
-# requirements for faster_whisper
-cd stt-local && pip install -r requirements.txt && uvicorn whisper_server:app --host 0.0.0.0 --port 8000
-
-
-
-# TTS 
-sudo apt update
-sudo apt install software-properties-common -y
-sudo add-apt-repository ppa:deadsnakes/ppa -y
-sudo apt update
-sudo apt install python3.9 python3.9-venv python3.9-dev -y
-# have different virtual environment.
-python3.9 -m venv .venvTTS
-source .venvTTS/bin/activate
-
-pip install TTS
-tts-server --use_cuda true
-
-
-# if no NVIDIA GPU detected
-nvidia-smi
-sudo apt install -y nvidia-driver-535
-sudo reboot
