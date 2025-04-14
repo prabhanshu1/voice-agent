@@ -92,3 +92,50 @@ srv  update_slots: all slots are idle
 
 
 # GPU efficient for handling bfloat16 operations - NVIDIA RTX
+
+
+
+def build_oai_message(msg: llm.ChatMessage, cache_key: Any):
+    oai_msg: dict[str, Any] = {"role": msg.role}
+
+    if msg.name:
+        oai_msg["name"] = msg.name
+
+    # add content if provided
+    if isinstance(msg.content, str):
+        oai_msg["content"] = msg.content
+    elif isinstance(msg.content, dict):
+        oai_msg["content"] = json.dumps(msg.content)
+    elif isinstance(msg.content, list):
+        oai_content: list[dict[str, Any]] = []
+        for cnt in msg.content:
+            if isinstance(cnt, str):
+                oai_content.append({"type": "text", "text": cnt})
+            elif isinstance(cnt, llm.ChatImage):
+                oai_content.append(_build_oai_image_content(cnt, cache_key))
+
+        oai_msg["content"] = oai_content
+
+    # make sure to provide when function has been called inside the context
+    # (+ raw_arguments)
+    if msg.tool_calls is not None:
+        tool_calls: list[dict[str, Any]] = []
+        oai_msg["tool_calls"] = tool_calls
+        for fnc in msg.tool_calls:
+            tool_calls.append(
+                {
+                    "id": fnc.tool_call_id,
+                    "type": "function",
+                    "function": {
+                        "name": fnc.function_info.name,
+                        "arguments": fnc.raw_arguments,
+                    },
+                }
+            )
+
+    # tool_call_id is set when the message is a response/result to a function call
+    # (content is a string in this case)
+    if msg.tool_call_id:
+        oai_msg["tool_call_id"] = msg.tool_call_id
+
+    return oai_msg

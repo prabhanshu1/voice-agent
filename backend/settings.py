@@ -1,5 +1,5 @@
 
-SERVER_IP = "54.202.184.118"
+SERVER_IP = "0.0.0.0"
 
 # STT_SERVER_URL = "http://"+SERVER_IP+":8000/transcribe/"
 STT_SERVER_URL = "http://"+SERVER_IP+":8000/inference"
