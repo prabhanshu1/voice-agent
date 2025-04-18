@@ -15,12 +15,13 @@ from custom_tts import myTTS
 from custom_llm import myLLM
 
 import settings
+from pprint import pprint
 
 load_dotenv()
 
 class Assistant(Agent):
     def __init__(self) -> None:
-        super().__init__(instructions=settings.LLM_PROMPT) ## LLM Prompt for AI
+        super().__init__(instructions=settings.LLM_PROMPT) ## LLM Prompt
 
 
 async def entrypoint(ctx: agents.JobContext):
@@ -28,7 +29,6 @@ async def entrypoint(ctx: agents.JobContext):
 
     session = AgentSession(
         stt=mySTT(),
-        # llm=openai.with_ollama(base_url=settings.LLM_SERVER_URL),
         llm=myLLM.with_ollama(model=settings.LLM_MODEL, base_url=settings.LLM_SERVER_URL),
         tts=myTTS(),
         vad=silero.VAD.load(),
@@ -45,10 +45,6 @@ async def entrypoint(ctx: agents.JobContext):
 
     await asyncio.sleep(1)
     await session.say(settings.GREETING_MESSAGE, allow_interruptions=True)
-
-    # await session.generate_reply(
-    #     # instructions="Greet the user and offer your assistance."
-    # )
 
 
 if __name__ == "__main__":

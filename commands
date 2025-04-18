@@ -35,8 +35,13 @@ cd stt-local && uvicorn whisper_server:app --host 0.0.0.0 --port 8000
 # https://github.com/ggml-org/whisper.cpp?tab=readme-ov-file
 #https://github.com/ggml-org/whisper.cpp/tree/master/examples/server
 sh ./models/download-ggml-model.sh large-v3-turbo
-.whisper.cpp/build/bin/whisper-server -m models/ggml-large-v3-turbo.bin --host 0.0.0.0 --port 8000 -t $(nproc) -ps -pc -pr 
+./whisper.cpp/build/bin/whisper-server -m whisper.cpp/models/ggml-large-v3-turbo.bin --host 0.0.0.0 --port 8000 -t $(nproc) -ps -pc -pr -l en
 # https://pypi.org/project/whisper-cpp-python/
+
+# commands
+# -l auto
+
+
 
 # TTS 
 python3.10 -m venv .venvTTS && source .venvTTS/bin/activate
@@ -46,6 +51,16 @@ pip install -r local-TTS/requirements.txt
 # tts-server --use_cuda true
 #git file lownload
 cd local-TTS && uvicorn tts:app --host 0.0.0.0 --port 5002
+
+# Get list of speakers
+## from TTS.api import TTS
+# tts = TTS(model_name="tts_models/multilingual/multi-dataset/your_tts", progress_bar=False, gpu=True)
+# print(tts.speakers)
+#your_tts
+## Speakers list : ['female-en-5', 'female-en-5\n', 'female-pt-4\n', 'male-en-2', 'male-en-2\n', 'male-pt-3\n']
+
+
+
 
 # if getting error of torch 2.6.0 for using xtts
 # pip uninstall torch
@@ -83,7 +98,7 @@ pip install huggingface_hub
 
 huggingface-cli download google/gemma-3-4b-it-qat-q4_0-gguf --local-dir ~/models/gemma --local-dir-use-symlinks False
 
-./bin/llama-server -m ~/models/gemma/gemma-3-4b-it-q4_0.gguf -ngl 100 -c 2048 -b 2048 --no-webui --mlock --threads $(nproc) --chat-template gemma --host 0.0.0.0 --port 8080
+./llama.cpp/build/bin/llama-server -m ~/models/gemma/gemma-3-4b-it-q4_0.gguf -ngl 100 -c 2048 -b 2048 --no-webui --mlock --threads $(nproc) --chat-template gemma --host 0.0.0.0 --port 8080
 
 # -v Set verbosity level to infinity
 # -lv Set the verbosity threshold. Messages with a higher verbosity will be ignored.
@@ -129,6 +144,24 @@ OLLAMA_HOST=0.0.0.0 OLLAMA_PORT=11434 ollama serve
 # ollama serve # if ollama is not run with above command
 
 
+# Livekit agent
+curl -sSL https://get.livekit.io/cli | bash  # cli
+lk token create \
+  --api-key devkey --api-secret secret \
+  --join --room test_room --identity test_user \
+  --valid-for 24h
+
+python3.10 -m venv .venvVoiceAgent && source .venvVoiceAgent/bin/activate
+git clone https://github.com/prabhanshu1/voice-agent.git
+cd voice-agent && pip install -r requirements.txt
+pip install \
+  "livekit-agents[openai,silero,deepgram,cartesia,turn-detector]~=1.0" \
+  "livekit-plugins-noise-cancellation~=0.2" \
+  "python-dotenv"
+
+python backend/agent.py download-files
+python backen/agent.py dev
+
 #Monitoring
 htop 
 nvidia-smi -l 1 
@@ -152,3 +185,8 @@ source .venvLLM/bin/activate && cd llm-local && uvicorn llm:app --host 0.0.0.0 -
 
 source .venvTTS/bin/activate && tts-server --use_cuda true
 
+
+#SIP#
+lk sip inbound create inbound-trunk.json \
+  --url http://localhost:7880 \
+ --api-key devkey --api-secret secret

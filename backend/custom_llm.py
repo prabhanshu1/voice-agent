@@ -48,7 +48,6 @@ from openai.types.chat import (
 )
 from openai.types.chat.chat_completion_chunk import Choice
 
-# from ._oai_api import build_oai_function_description
 from log import logger
 from models import (
     ChatModels,
